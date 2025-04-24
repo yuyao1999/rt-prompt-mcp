@@ -1,0 +1,7 @@
+node_modules/
+unpackage/
+dist*/
+mock/
+.lh/
+.DS_Store
+.specstory/
