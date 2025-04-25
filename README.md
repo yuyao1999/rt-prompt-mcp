@@ -4,6 +4,8 @@
 
 RT-Prompt-MCP 是一个基于 Model Context Protocol (MCP) 的服务器，专注于提供开发和设计相关的提示词补充建议。
 
+[![smithery badge](https://smithery.ai/badge/@yuyao1999/rt-prompt-mcp)](https://smithery.ai/server/@yuyao1999/rt-prompt-mcp)
+
 ## 功能特点
 
 - 提供特定领域的提示词补充，帮助 LLM 生成更符合要求的内容
@@ -12,6 +14,14 @@ RT-Prompt-MCP 是一个基于 Model Context Protocol (MCP) 的服务器，专注
 - 使用 TypeScript 开发，类型安全
 
 ## 安装
+
+### Installing via Smithery
+
+To install RT-Prompt-MCP for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@yuyao1999/rt-prompt-mcp):
+
+```bash
+npx -y @smithery/cli install @yuyao1999/rt-prompt-mcp --client claude
+```
 
 全局安装:
 
