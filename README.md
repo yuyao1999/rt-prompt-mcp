@@ -4,6 +4,10 @@
 
 RT-Prompt-MCP 是一个基于 Model Context Protocol (MCP) 的服务器，专注于提供开发和设计相关的提示词补充建议。
 
+<a href="https://glama.ai/mcp/servers/@yuyao1999/rt-prompt-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@yuyao1999/rt-prompt-mcp/badge" alt="RT-Prompt-MCP MCP server" />
+</a>
+
 ## 功能特点
 
 - 提供特定领域的提示词补充，帮助 LLM 生成更符合要求的内容
