@@ -6,7 +6,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod"
 
 // 导入我们的提示词补充服务
-import { getBackendPrompts, getFrontendPrompts, getGeneralPrompts, getUiDesignPrompts } from "./promptSuggestions.js"
+import { getBackendPrompts, getFrontendPrompts, getGeneralPrompts, getUiDesignPrompts, getRongtongBackendCrudSuggestions } from "./promptSuggestions.js"
 
 // 创建MCP服务器实例
 const server = new McpServer({
@@ -85,13 +85,35 @@ server.tool(
     designType: z.string().optional().describe("设计类型，如线框图、高保真原型图等"),
     platform: z.string().optional().describe("平台类型，如Web、iOS、Android等"),
   },
-  async ({ context, designType, platform }) => {
-    const suggestions = getUiDesignPrompts(context, designType, platform)
+  async ({ context, designType, platform }, extra) => {
+    const suggestions = await getUiDesignPrompts(context, designType, platform)
     return {
       content: [
         {
           type: "text",
           text: suggestions,
+        },
+      ],
+    }
+  }
+)
+
+// 新增：注册荣通后端 CRUD 工具
+server.tool(
+  "get_rt_crud_suggestions",
+  {
+    base_path: z
+      .string()
+      .optional()
+      .describe("可选的 Java/Kotlin 根包路径，例如 'com.example.myapp' 或 'cn.teamy'。如果提供，将替换提示中默认的 'cn.teamy'。请使用点分隔。"),
+  },
+  async ({ base_path }) => {
+    const suggestionsArray = getRongtongBackendCrudSuggestions(base_path)
+    return {
+      content: [
+        {
+          type: "text",
+          text: suggestionsArray.length > 0 ? suggestionsArray[0] : "",
         },
       ],
     }
@@ -113,6 +135,7 @@ server.resource("info", "info://usage", async (uri) => ({
 2. get_frontend_suggestions: 获取前端开发相关的提示词补充
 3. get_general_suggestions: 获取通用场景的提示词补充
 4. get_ui_design_suggestions: 获取UI设计图转化相关的提示词补充
+5. get_rt_crud_suggestions: 获取荣通后端标准 CRUD 开发规范提示词
 
 ## 使用示例
 
@@ -138,13 +161,10 @@ server.resource("info", "info://usage", async (uri) => ({
 
 // 启动服务器
 async function main() {
-  console.error("Starting RT-Prompt-MCP server...")
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error("RT-Prompt-MCP server running")
 }
 
 main().catch((error) => {
-  console.error("Fatal error:", error)
   process.exit(1)
 })

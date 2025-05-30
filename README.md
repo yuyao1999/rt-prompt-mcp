@@ -46,23 +46,33 @@ rt-prompt-mcp
 
 ## 工具说明
 
-该 MCP Server 提供三个主要工具:
+该 MCP Server 提供五个主要工具:
 
-1. **get-backend-suggestions**: 获取后端开发相关的提示词补充
+1. **get_backend_suggestions**: 获取后端开发相关的提示词补充
 
    - `context`: 当前上下文或任务描述
    - `databaseType`: 数据库类型（如 MySQL、PostgreSQL 等）
    - `language`: 编程语言（如 Java、Python 等）
 
-2. **get-frontend-suggestions**: 获取前端开发相关的提示词补充
+2. **get_frontend_suggestions**: 获取前端开发相关的提示词补充
 
    - `context`: 当前上下文或任务描述
    - `framework`: 前端框架（如 React、Vue 等）
    - `deviceType`: 设备类型（如移动端、桌面端等）
 
-3. **get-general-suggestions**: 获取通用场景的提示词补充
+3. **get_general_suggestions**: 获取通用场景的提示词补充
+
    - `context`: 当前上下文或任务描述
    - `taskType`: 任务类型（如代码生成、文档生成等）
+
+4. **get_ui_design_suggestions**: 获取 UI 设计图转化相关的提示词补充
+
+   - `context`: 当前上下文或任务描述
+   - `designType`: 设计类型（如线框图、高保真原型图等）
+   - `platform`: 平台类型（如 Web、iOS、Android 等）
+
+5. **get_rt_crud_suggestions**: 获取荣通后端标准 CRUD 开发规范提示词。
+   - `base_path` (可选): Java/Kotlin 根包路径，例如 'com.example.myapp' 或 'cn.teamy'。如果提供，将替换提示中默认的 'cn.teamy'。请使用点分隔路径。
 
 ## 示例
 

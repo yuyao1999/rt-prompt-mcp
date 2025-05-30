@@ -15,6 +15,9 @@
  * @format
  */
 
+import { getContentById } from "./feishu.js"
+import { getCodingContent } from "./coding.js"
+
 // 后端开发相关提示词
 export function getBackendPrompts(context?: string, databaseType?: string, language?: string): string {
   let suggestions = `## 后端开发提示词建议\n\n`
@@ -281,26 +284,13 @@ export function getGeneralPrompts(context?: string, taskType?: string): string {
 }
 
 // 添加获取UI设计图转化的提示词补充
-export function getUiDesignPrompts(context?: string, designType?: string, platform?: string): string {
+export async function getUiDesignPrompts(context?: string, designType?: string, platform?: string): Promise<string> {
   // 新增：检查是否包含特定关键词
   if (context && context.includes("荣通前端UI图转换")) {
     // 将规则存储在数组中以提高可读性
-    const rongtongRules = [
-      "1.  设计稿所有细节100%还原！",
-      "2.  布局要和设计稿一致。",
-      "3.  反复对比是否与设计稿完全一致。",
-      "4.  严格遵循要求。",
-      "5.  数据用模拟数据代替。",
-      "6.  使用的uniapp框架，使用rpx单位。",
-      "7.  不需要还原顶部导航。",
-      "8.  使用scss变量，并且符合命名规范。",
-      "9.  当font-weight为500时都改为600。",
-      "10. 不需要你进行自主发挥，严格按照设计稿还原。",
-      "11. 文字尽可能不要设置固定width以防止意外换行，并且单行文本设置文字不换行属性 `white-space: nowrap;`。",
-      "12. 不使用 `background-image` 属性，使用 `<image>` 标签。",
-      "13. 尽可能使用类选择器，避免使用标签选择器。",
-    ]
-    return `## 荣通前端UI图转换要求\n\n${rongtongRules.join("\n")}`
+    const rongtongRules = await getContentById("1")
+    const codingContent = await getCodingContent("https://rongtongkeji.coding.net/p/rt-lib/d/rt-lib/git/raw/master/data/README.md")
+    return `## 荣通前端UI图转换要求\n\n${rongtongRules}\n\n${codingContent}`
   }
 
   let suggestions = `## UI 设计图转化提示词建议\n\n`
@@ -404,4 +394,294 @@ export function getUiDesignPrompts(context?: string, designType?: string, platfo
   suggestions += `8. 使用版本控制管理设计资源和代码\n`
 
   return suggestions
+}
+
+/**
+ * 存储各种提示词建议的常量
+ */
+const suggestions = {
+  // ... existing code ...
+}
+
+// 将常量箭头函数改为标准函数声明
+function generateRongtongBackendCrudPrompt(basePath: string): string {
+  return `
+1. 技术栈与核心框架:
+● 编程语言: Kotlin
+● Web 框架: Spring Boot
+    ○ 使用标准 Spring Boot 注解进行组件扫描、依赖注入 (@Service, @Repository, @Component, @Autowired 或 Jakarta EE 的 @Resource) 和 Web 层构建 (@RestController, @RequestMapping, @GetMapping, @PostMapping, etc.)。
+● API 文档: OpenAPI 3 / Swagger
+    ○ 使用 @Tag 标注模块名称。
+    ○ 使用 @Operation 详细描述每个 API 端点的功能。
+    ○ 使用 @Schema 描述数据传输对象 (DTO) 和领域模型 (Entity)。
+● 数据访问层:
+    ○ 定义通用的 ${basePath}.data.IMapper<T> 接口，包含基础的 CRUD 操作（如 insert, delete, update, findById, page 等）。
+    ○ 每个模块的 Mapper 接口继承此通用 IMapper 接口。
+    ○ 具体实现可基于 MyBatis, JPA, أو Spring Data JDBC 等，但接口层保持统一。
+● JSON 库: FastJSON (或其他项目统一指定的 JSON 库)。
+● 日志框架: SLF4J。
+
+2. 标准模块结构:
+对于每个业务模块（例如 user, order, product），应遵循以下目录结构：
+${basePath}/{module_name}/
+├── {ModuleName}Service.kt      # (必需) RestController，处理 HTTP 请求，编排业务逻辑
+├── domain/
+│   └── {EntityName}.kt         # (必需) 领域模型/数据实体类
+└── mapper/
+    └── I{EntityName}Mapper.kt  # (必需) 数据访问接口定义
+# 可选:
+├── dto/
+│   └── {DtoName}.kt            # 数据传输对象 (如果需要区分输入/输出与领域模型)
+● {module_name}: 模块的小写名称 (e.g., appendix, contract)
+● {ModuleName}: 模块的驼峰式名称 (e.g., Appendix, Contract)
+● {EntityName}: 模块核心实体类的名称 (e.g., Appendix, Contract)
+
+3. 代码风格与设计模式:
+● 服务层 (
+    ○ 作为 @RestController，直接处理 Web 请求。对于简单 CRUD，可以将服务逻辑直接写在此类中。
+    ○ 若业务逻辑复杂，可将 @RestController 作为入口，注入单独的 @Service 接口及其实现来处理业务逻辑。
+    ○ 注入对应的 I{EntityName}Mapper 接口进行数据操作。
+    ○ 标准 CRUD 接口设计 (仅需实现这四个基本接口):
+        1. 创建: POST /add
+           @Operation(summary = "新增{EntityName}")
+           @PostMapping("/add")
+           fun add(@RequestBody dto: {EntityName}): OpResults<String> {
+               return try {
+                   val entity = {EntityName}().apply {
+                       BeanUtils.copyProperties(dto, this)
+                       id = ExtFunction.uuid()
+                       create_time = Date()
+                   }
+                   mapper.insert(entity)
+                   OpResults<String>().apply {
+                       data = ""
+                       msg = "新增成功"
+                       ok = true
+                   }
+               } catch (e: Exception) {
+                   log.error("新增失败: \${e.message}", e)
+                   OpResults<String>().apply {
+                       ok = false
+                       msg = "新增失败: \${e.message}"
+                   }
+               }
+           }
+        2. 查询 (分页): POST /page
+           @Operation(summary = "分页查询{EntityName}")
+           @PostMapping("/page")
+           fun list(@RequestBody pageable: Pageable): Page<{EntityName}> {
+               return mapper.page(pageable)
+           }
+           
+        3. 更新: POST /update
+           @Operation(summary = "修改{EntityName}")
+           @PostMapping("/update")
+           fun update(@RequestBody dto: {EntityName}): OpResults<String> {
+               log.debug("修改发票抬头参数:{}", JSONObject.toJSONString(dto))
+               return try {
+                   // 需要导入 ${basePath}.utils.FieldUtils
+                   mapper.update({EntityName}().apply {
+                       FieldUtils.copyProperties(dto, this)
+                   })
+                   OpResults<String>().apply {
+                       ok = true
+                       msg = "修改成功"
+                   }
+               } catch (e: Exception) {
+                   log.error("修改失败: \${e.message}", e)
+                   OpResults<String>().apply {
+                       ok = false
+                       msg = "修改失败: \${e.message}"
+                   }
+               }
+           }
+        4. 删除: GET /delete
+           @Operation(summary = "删除{EntityName}")
+           @GetMapping("/delete")
+           fun delete(@RequestParam id: String): OpResults<String> {
+               val opResults = OpResults<String>()
+               mapper.delete(id)
+               opResults.msg = "删除成功"
+               opResults.ok = true
+               return opResults
+           }
+
+    ○ 所有对外接口返回统一的响应结构，例如 ${basePath}.utils.vo.OpResults<T>。该结构包含：
+        ■ ok: Boolean (默认为 true) - 操作是否成功。
+        ■ msg: String? (默认为 "") - 操作结果的消息文本。
+        ■ data: T? (默认为 null) - 操作成功时返回的数据。
+          ■ 使用示例:
+              // 成功示例
+              OpResults<String>().apply {
+                  data = ""
+                  msg = "新增发票抬头成功"
+                  ok = true  // ok 默认就是 true，可以省略
+              }
+              
+              // 失败示例
+              OpResults<String>().apply {
+                  ok = false
+                  msg = "新增发票抬头失败: \${e.message}"  // e 为捕获的异常
+                  // 失败情况下通常不设置 data
+              }
+    ○ 使用 SLF4J 进行清晰的日志记录（INFO 记录关键流程，DEBUG 记录详细信息，ERROR 记录异常）。
+    ○ 使用 try-catch 块处理预期或非预期的异常，并返回包含错误信息的 OpResults。
+    ○ 分页查询统一接收 ${basePath}.data.vo.Pageable 参数，返回 ${basePath}.data.vo.Page<T> 结果。
+    ○ 优先使用项目提供的通用工具类（如 ${basePath}.utils.FieldUtils.copyProperties, ${basePath}.utils.ExtFunction.uuid 等）。
+       ExtFunction.uuid() 使用示例:
+      config.id = ExtFunction.uuid()  // 直接为对象的 ID 赋值一个 UUID
+● 领域模型 (
+    ○ 使用 Kotlin 类定义，属性采用 var 并允许为 null (?)，除非业务明确要求非空。
+    ○ 下划线命名字段和数据库表字段一致
+    ○ 使用 @Schema 注解清晰描述实体及其属性的含义。
+    ○ 使用 @Table(TableName) 注解（或其他持久化框架要求的注解）关联数据库表。表名在 companion object 中定义为常量 TableName。
+    ○ 日期时间类型的属性使用 @JsonFormat 控制序列化格式和时区。
+    ○ 领域模型示例(将 basePath 替换为实际包路径):
+    ○ 例如:
+        package basePath.appendix.domain
+
+        import basePath.data.annotation.Table
+        import com.fasterxml.jackson.annotation.JsonFormat
+        import io.swagger.v3.oas.annotations.media.Schema
+        import java.util.*
+
+        @Schema
+        @Table(Appendix.TableName)
+        class Appendix {
+            @Schema(title = "唯一标识")
+            var id: String? = null
+
+            @Schema(title = "甲方名称")
+            var party_name: String? = null
+
+            @Schema(title = "附件名称")
+            var attachment_name: String? = null
+
+            @Schema(title = "附件信息JSON")
+            var attachment_json: String? = null
+
+            @Schema(title = "创建时间")
+            @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+            var create_time: Date? = null
+
+
+            companion object {
+                const val TableName = "appendix"
+            }
+        }
+        
+● Mapper 接口 (
+    ○ 定义为 Kotlin 接口，继承通用的 ${basePath}.data.IMapper<{EntityName}>。
+    ○ 通常不需要添加额外的方法，除非有超出通用 CRUD 的特定查询需求。
+
+4. 核心功能实现要点:
+● 增 (Create): Service 层接收 DTO 或实体对象，设置必要的默认值（例如，ID 使用 basePath 下的 utils.ExtFunction.uuid() 生成, create_time），调用 mapper.insert。确保导入 basePath 下的 utils.ExtFunction。
+● 删 (Delete): Service 层接收 ID，调用 mapper.delete。
+● 改 (Update): Service 层接收 DTO 或实体对象，可能需要先查询原实体，然后更新属性，调用 mapper.update。注意处理部分更新和 null 值。
+● 查 (Read):
+    ○ 分页查询: Service 层接收 Pageable 对象，调用 mapper.page。
+    ○ 按 ID 查询 (若需要): Service 层接收 ID，调用 mapper.select(id)。
+      // 查询后检查结果是否存在 (需要导入 org.apache.commons.lang3.ObjectUtils):
+      val entity = mapper.select(id)
+      if (ObjectUtils.isEmpty(entity)) {
+          // 处理未找到实体的情况，例如抛出异常或返回特定错误信息
+      }
+    ○ 其他查询: 根据需要在 Service 层组合调用 Mapper 的方法。
+
+5. 通用依赖:
+所有模块都应能访问和使用项目定义的通用类库，包括：
+● ${basePath}.data.vo.Page, ${basePath}.data.vo.Pageable
+● ${basePath}.utils.vo.OpResults
+● ${basePath}.data.IMapper
+● ${basePath}.data.annotation.Table (或 ORM 提供的注解)
+● 常用工具类 (e.g., ${basePath}.utils.ExtFunction, ${basePath}.utils.FieldUtils)
+
+6. 示例 MySQL 表结构:
+-- 用户表 (示例)
+CREATE TABLE \`user\` (
+  \`id\` varchar(32) NOT NULL COMMENT "主键ID (使用varchar(32))",
+  \`username\` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT "用户名",
+  \`password_hash\` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT "加盐哈希后的密码",
+  \`email\` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT "邮箱",
+  \`create_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "创建时间",
+  \`update_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "更新时间",
+  PRIMARY KEY (\`id\`),
+  UNIQUE KEY \`uk_username\` (\`username\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT="用户表";
+
+-- 订单表 (示例)
+CREATE TABLE \`order\` (
+  \`id\` varchar(32) NOT NULL COMMENT "主键ID (使用varchar(32))",
+  \`order_number\` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT "订单号",
+  \`user_id\` varchar(32) NOT NULL COMMENT "用户ID (关联user.id)",
+  \`total_amount\` decimal(10,2) NOT NULL COMMENT "订单总金额",
+  \`status\` tinyint NOT NULL DEFAULT 0 COMMENT "订单状态 (例如: 0-待支付, 1-已支付, 2-已取消)",
+  \`create_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "创建时间",
+  \`update_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "更新时间",
+  PRIMARY KEY (\`id\`),
+  UNIQUE KEY \`uk_order_number\` (\`order_number\`),
+  KEY \`idx_user_id\` (\`user_id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT="订单表";
+
+
+7. 严格遵循以上规范，不要遗漏任何细节。
+
+`
+}
+
+/**
+ * 获取后端开发相关的提示词补充。
+ * @param context 可选的当前上下文或任务描述。
+ * @returns 返回一个包含建议字符串的数组。
+ */
+export function getBackendSuggestions(context?: string): string[] {
+  let results: string[] = []
+
+  if (context) {
+    // 基于 context 的通用后端建议
+    results = results.concat([
+      // ... (保留原有基于 context 的建议)
+      "考虑代码的可维护性和可扩展性。",
+      "遵循 SOLID 原则进行设计。",
+      "编写单元测试和集成测试以确保代码质量。",
+      "使用版本控制系统（如 Git）管理代码。",
+      "考虑 API 的安全性和认证授权机制。",
+    ])
+    if (context.includes("API 设计")) {
+      results.push("遵循 RESTful 风格设计 API，使用标准的 HTTP 方法 (GET, POST, PUT, DELETE)。")
+      results.push("设计清晰的 URL 结构。")
+      results.push("考虑 API 的版本管理策略。")
+      results.push("使用 OpenAPI/Swagger 规范定义和文档化 API。")
+    }
+    if (context.includes("数据库设计")) {
+      results.push("根据业务需求设计合理的表结构和关系。")
+      results.push("选择合适的字段类型和约束。")
+      results.push("考虑数据库索引优化查询性能。")
+      results.push("设计范式和反范式的权衡。")
+    }
+    if (context.includes("性能优化")) {
+      results.push("分析性能瓶颈，可能是数据库查询、算法复杂度或外部调用。")
+      results.push("使用缓存技术（如 Redis）减少数据库负载。")
+      results.push("优化 SQL 查询语句。")
+      results.push("考虑异步处理和消息队列。")
+    }
+    if (context.includes("部署")) {
+      results.push("考虑使用 Docker 容器化部署。")
+      results.push("配置 CI/CD 流程实现自动化部署。")
+      results.push("设置日志监控和告警系统。")
+    }
+  }
+  // ... (保留原有基于 databaseType 和 language 的建议)
+  // ... existing code ...
+  return results // 添加 return 语句修复 lint 错误
+}
+
+/**
+ * 获取荣通后端标准 CRUD 开发规范提示词
+ * @param basePath 用户指定的根包路径，默认为 'cn/teamy'
+ */
+export function getRongtongBackendCrudSuggestions(basePath?: string): string[] {
+  const effectiveBasePath = basePath || "cn/teamy" // 如果未提供，使用默认值
+  const prompt = generateRongtongBackendCrudPrompt(effectiveBasePath.replace(/\./g, "/")) // 确保路径分隔符为 /
+  return [prompt]
 }
