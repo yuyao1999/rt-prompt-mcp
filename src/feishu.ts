@@ -479,3 +479,20 @@ export async function getContentById(id: string): Promise<any> {
     throw error
   }
 }
+
+/**
+ * 根据名称获取内容字段值的简化函数
+ * @param name 记录名称
+ * @returns Promise<内容字段值 | null>
+ */
+export async function getContentByName(name: string): Promise<any> {
+  try {
+    // 获取数据
+    const data = await fetchFeishuTableData()
+
+    // 使用queryRecords查询内容
+    return queryRecords(data.records, { 名称: name }, "内容")
+  } catch (error) {
+    throw error
+  }
+}

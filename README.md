@@ -72,7 +72,11 @@ rt-prompt-mcp
    - `platform`: 平台类型（如 Web、iOS、Android 等）
 
 5. **get_rt_crud_suggestions**: 获取荣通后端标准 CRUD 开发规范提示词。
+
    - `base_path` (可选): Java/Kotlin 根包路径，例如 'com.example.myapp' 或 'cn.teamy'。如果提供，将替换提示中默认的 'cn.teamy'。请使用点分隔路径。
+
+6. **get_feishu_prompt**: 获取飞书相关的提示词
+   - `prompt_name`: 提示词名称，如'UI 转化提示词'、'AI 生成 UI-3D 风格'等
 
 ## 示例
 

@@ -7,6 +7,10 @@ import { z } from "zod"
 
 // 导入我们的提示词补充服务
 import { getBackendPrompts, getFrontendPrompts, getGeneralPrompts, getUiDesignPrompts, getRongtongBackendCrudSuggestions } from "./promptSuggestions.js"
+// 导入飞书文档获取函数
+import { getContentByName } from "./feishu.js"
+// 导入coding内容获取函数
+import { getCodingContent } from "./coding.js"
 
 // 创建MCP服务器实例
 const server = new McpServer({
@@ -120,6 +124,56 @@ server.tool(
   }
 )
 
+// 新增：从飞书文档获取提示词工具
+server.tool(
+  "get_feishu_prompt",
+  {
+    prompt_name: z.string().describe("提示词名称，如'UI转化提示词'、'AI生成UI-3D风格'等"),
+  },
+  async ({ prompt_name }) => {
+    try {
+      // 调用飞书API获取对应名称的内容
+      const content = await getContentByName(prompt_name)
+
+      // 检查内容是否是coding.net链接
+      if (content && content.trim().includes("coding.net")) {
+        // 使用正则表达式提取链接
+        const urlMatch = content.match(/(https?:\/\/[^\s]+coding\.net[^\s]+)/i)
+        if (urlMatch && urlMatch[1]) {
+          // 使用getCodingContent获取链接内容
+          const codingContent = await getCodingContent(urlMatch[1])
+          return {
+            content: [
+              {
+                type: "text",
+                text: codingContent || `无法从链接获取内容: ${urlMatch[1]}`,
+              },
+            ],
+          }
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: content || `未找到名为"${prompt_name}"的提示词`,
+          },
+        ],
+      }
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `获取提示词失败: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+      }
+    }
+  }
+)
+
 // 资源: 提供关于如何使用此服务的信息
 server.resource("info", "info://usage", async (uri) => ({
   contents: [
@@ -136,6 +190,7 @@ server.resource("info", "info://usage", async (uri) => ({
 3. get_general_suggestions: 获取通用场景的提示词补充
 4. get_ui_design_suggestions: 获取UI设计图转化相关的提示词补充
 5. get_rt_crud_suggestions: 获取荣通后端标准 CRUD 开发规范提示词
+6. get_feishu_prompt: 从飞书文档获取指定名称的提示词
 
 ## 使用示例
 
@@ -153,6 +208,12 @@ server.resource("info", "info://usage", async (uri) => ({
 - context: "将设计图转换为响应式界面"
 - designType: "高保真原型图"
 - platform: "Web"
+\`\`\`
+
+例如，当您需要获取飞书文档中的特定提示词时，可以使用：
+\`\`\`
+使用 get_feishu_prompt 工具，并提供以下参数:
+- prompt_name: "UI转化提示词"
 \`\`\`
       `,
     },
